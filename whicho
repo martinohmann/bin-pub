@@ -1,9 +1,25 @@
 #!/bin/bash
 #
-# which file.., and open it
+# find files and edit them
 
-which "$@"
+output=$(which -a "$@" | sed 's/^/  /g')
+echo "=> query: $@"
 if [ $? -eq 0 ]; then
-  # force vim
-  vim -p "$@"
+  for f in "$@"; do
+    echo "=> found files: $f"
+    files=$(which -a "$f")
+    select g in $files all skip; do
+      if [ "$g" == "all" ]; then
+        vim -p $files
+        break
+      elif [ "$g" == "skip" ]; then
+        break
+      fi
+
+      if [ "$g" != '' ]; then
+        vim "$g"
+      fi
+      break
+    done
+  done
 fi
