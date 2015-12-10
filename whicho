@@ -1,1 +1,9 @@
-/home/mohmann/.local/bin/whicho
+#!/bin/bash
+#
+# which file.., and open it
+
+which "$@"
+if [ $? -eq 0 ]; then
+  # force vim
+  vim -p "$@"
+fi
