@@ -1,0 +1,171 @@
+#!/bin/bash
+#
+# manager for a mini vm cluster
+#
+# author: Martin Ohmann <martin@mohmann.de>
+#
+
+# names or uuids of the cluster vms
+vms=("node-m00" "node-m01" "node-m02" "node-m03" "node-m04")
+
+# start vms headless? set 0 for debugging purposes
+headless=1
+
+# colors
+ctxt="\033[1;37m"
+cdef="\033[1;34m"
+cerr="\033[1;31m"
+csucc="\033[1;32m"
+crst="\033[0;0m"
+
+#globals
+running_vms=$(VBoxManage list runningvms | \
+	sed 's/"\([^"]\+\)".*/\1/g')
+
+# functions
+usage() {
+	printf "usage: %s [list|[<vmname>] \
+[pause|resume|restart|start|status|stop]]\n" "$(basename "$0")"
+}
+
+msg_c() {
+	local color=$1 fmt=$2; shift; shift
+	printf "${color}=> ${ctxt}${fmt}${crst}\n" $@
+}
+
+msg() {
+	local fmt=$1; shift
+	printf "  ${fmt}" $@
+}
+
+vm_running() {
+	local vm=$1 running_vm=
+	for running_vm in $running_vms; do
+		[ "$running_vm" = "$vm" ] && return 0
+	done
+	return 1
+}
+
+in_vm_list() {
+	local needle=$1
+	for vm in ${vms[@]}; do
+		[[ "$vm" == "$needle" ]] && return 0
+	done
+	return 1
+}
+
+vm_state() {
+	local vm=$1 state=$2
+	local vm_state=$(VBoxManage showvminfo "$vm" --machinereadable | \
+		sed '/^VMState=/!d; s/VMState="\(.*\)"/\1/g')
+	[ "$vm_state" = "$state" ] && return 0
+	return 1
+}
+
+vm_status() {
+	local vm=$1
+	msg_c "${cdef}" "\"%s\" status:" "$vm"
+
+	if vm_running "$vm"; then
+		if vm_state "$vm" "paused"; then
+			msg "up, paused\n"
+		else
+			msg "up, running\n"
+		fi
+	else
+		msg "down\n"
+	fi
+}
+
+start_vm() {
+	local vm=$1
+	msg_c "${csucc}" "starting vm \"%s\"..." "$vm"
+
+	if vm_running "$vm"; then
+		msg "already running\n"
+	else
+		VBoxManage startvm "$vm" $start_args 2>&1 | sed 's/^/  /g'
+	fi
+}
+
+control_vm() {
+	local vm=$1 action=$2 action_str=$3
+	msg_c "${cdef}" "%s vm \"%s\"..." "$action_str" "$vm"
+
+	if vm_running "$vm"; then
+		if [ "$action" = "resume" ] && vm_state "$vm" "running"; then
+			msg "already running\n"
+			exit 0
+		elif [ "$action" = "pause" ] && vm_state "$vm" "paused"; then
+			msg "already paused\n"
+			exit 0
+		fi
+
+		VBoxManage controlvm "$vm" "$action" 2>&1 | sed 's/^/  /g'
+	else
+		msg "not running\n"
+	fi
+}
+
+start_vms() {
+	for vm in ${vms[@]}; do
+		start_vm "$vm"
+	done
+}
+
+control_vms() {
+	for vm in ${vms[@]}; do
+		control_vm "$vm" "$1" "$2"
+	done
+}
+
+vm_statuses() {
+	for vm in ${vms[@]}; do
+		vm_status "$vm"
+	done
+}
+
+list_vms() {
+	msg_c "${cdef}" "listing cluster vms..."
+
+	for vm in ${vms[@]}; do
+		uuid=$(VBoxManage showvminfo "$vm" --machinereadable | \
+			sed '/^UUID/!d; s/UUID="\(.*\)"/\1/;')
+		msg "%s \033[0;37m%s\033[0;0m\n" "$vm" "$uuid"
+	done	
+}
+
+# main
+[ $# -lt 1 ] && { usage; exit 1; }
+[ $headless -eq 1 ] && start_args="--type headless"
+
+if [ $# -lt 2 ]; then
+	case "$1" in
+		start)   start_vms ;;
+		stop)    control_vms poweroff "stopping" ;;
+		restart) control_vms reset "resetting" ;;
+		pause)   control_vms pause "pausing" ;;
+		resume)  control_vms resume "resuming" ;;
+		status)  vm_statuses ;;
+		list)    list_vms ;;
+		*)       usage; exit 1 ;;
+	esac
+else
+	if ! in_vm_list "$1"; then
+		msg_c "${cerr}" "invalid vm"
+		msg "\"%s\" not in vm list\n" "$1"
+		list_vms; exit 1
+	fi
+
+	case "$2" in
+		start)   start_vm "$1";;
+		stop)    control_vm "$1" poweroff "stopping" ;;
+		restart) control_vm "$1" reset "resetting" ;;
+		pause)   control_vm "$1" pause "pausing" ;;
+		resume)  control_vm "$1" resume "resuming" ;;
+		status)  vm_status "$1" ;;
+		*)       usage; exit 1 ;;
+	esac
+fi
+
+exit 0

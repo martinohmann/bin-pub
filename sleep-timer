@@ -1,0 +1,114 @@
+#!/bin/bash
+#
+# set a sleep timer using osd-fifo
+# bind script to hotkey for intended use
+#
+
+## config
+# command to execute on sleep
+sleep_cmd="systemctl suspend"
+
+# timer states; times in minutes
+states=(0 20 30 40 60 90 120 180)
+
+# fifo path
+osd_fifo=/tmp/osd-fifo
+
+# file to store current state in
+state_file=/tmp/sleep-timer-state
+
+## globals
+job_id=0
+state=0
+res=0
+
+setup_osd_fifo() {
+  [ -p "$osd_fifo" ] || { 
+    osd-fifo & 
+    sleep 1
+  }
+}
+
+load_state() {
+  [ -f "$state_file" ] && . "$state_file"
+}
+
+save_state() {
+  printf 'job_id=%d\nstate=%d\nres="%s"\n' "$job_id" "$state" "$res" > "$state_file"
+}
+
+next_state() {
+  [ $state -ge $((${#states[@]}-1)) ] && state=-1
+  state=$((state+1))
+}
+
+create_job() {
+  job_id=$(echo "rm $state_file; $sleep_cmd" | \
+    at now + $1 minutes 2>&1 | \
+    sed -rn 's/^job ([0-9]+) at.*$/\1/p')
+}
+
+remove_job() {
+  [ $1 -gt 0 ] && { atrm $1; job_id=0; }
+}
+
+printf_osd() {
+  printf "$@" > "$osd_fifo"
+}
+
+show_status() {
+  # show remaining time
+  if [ $state -ne 0 ] && [ $job_id -gt 0 ]; then
+    time_sleep=$(date +"%s" -d "$(atq | \
+      sed -rn "s/^$job_id\s+(.*) a .*$/\1/p")")
+    time_now=$(date +"%s")
+    remaining=$(((time_sleep - time_now) / 60))
+    printf_osd "%d min until sleep\n" $remaining
+  else
+    printf_osd "no sleep timer set\n"
+  fi
+}
+
+set_timer() {
+  # switch to next state
+  next_state
+  minutes=${states[$state]}
+
+  if [ $minutes -gt 0 ]; then
+    printf_osd "sleep in %d min\n" $minutes
+    [ $job_id -gt 0 ] && remove_job $job_id
+    create_job $minutes
+  else
+    printf_osd "sleep timer off\n"
+    remove_job $job_id
+    state=0
+  fi
+
+  # save state to file
+  save_state
+}
+
+# load current sleep timer state
+load_state
+
+# restart osd-fifo if resolution changed
+current_res=$(xwininfo -root | grep 'geometry' | awk '{print $2;}')
+
+if [ "$current_res" != "$res" ]; then
+  echo "force osd-fifo restart"
+  res="$current_res"
+  save_state
+  pkill -f "tail -n 1 -f $osd_fifo"
+  sleep 1
+fi 
+
+# setup osd fifo
+setup_osd_fifo
+
+# run
+if [ "$1" = "status" ]; then
+  show_status
+else
+  set_timer
+fi
+

@@ -1,0 +1,34 @@
+#!/bin/bash
+#
+# dwm scratchpad wrapper
+#
+# scale scratchpad terminal on first invokation based on screen size
+#
+# author: Martin Ohmann <martin@mohmann.de>
+
+# base term and screen dimensions. this will be used 
+# as ratio to calculate the final term size.
+term_cols=150
+term_rows=40
+base_width=1378
+base_height=768
+
+if [ $# -lt 1 ]; then
+  printf "usage: %s <scrachpadname>\n" "$(basename "$0")"
+  exit 1
+fi
+
+# scratchpadname
+sp_name=$1
+
+# get screeninfo 
+wi=$(xwininfo -root)
+sw=$(echo "$wi" | sed -n "s/^\s\+Width:\s\+//p")
+sh=$(echo "$wi" | sed -n "s/^\s\+Height:\s\+//p")
+
+# final terminal size (TODO: this will produce too large scratchpads on dualhead)
+sp_cols=$(echo "scale=1; $sw/$base_width * $term_cols" | bc)
+sp_rows=$(echo "scale=1; $sh/$base_height * $term_rows" | bc)
+
+# open scratchpad
+exec urxvtc -name "$sp_name" -geometry "${sp_cols%.*}x${sp_rows%.*}"

@@ -1,0 +1,116 @@
+#!/bin/bash
+#
+# delay screensaver when needed
+# 
+# author: Martin Ohmann <martin@mohmann.de>
+#
+
+# default delay
+delay=50
+
+# always delay screensaver when one of delay_progs is running
+delay_progs=()
+
+usage() {
+	printf "usage: %s [<delay>]\n" "$(basename "$0")"
+	printf "delay screensaver when needed\n\n"
+	printf "  <delay>   delay between checks in seconds (>0). should\n" 
+	printf "            be ~10 seconds less than the time it takes the\n"
+	printf "            screensaver or DPMS to activate. default: %d\n" \
+		"$default_delay"
+}
+
+detect_displays() {
+	displays=()
+
+	while read id; do
+		displays+=("$id")
+	done < <(xvinfo | sed -n 's/^screen #\([0-9]\+\)$/\1/p')
+}
+
+check_delay_progs() {
+	for prog in "${delay_progs[@]}"; do
+		if pgrep "$prog" > /dev/null; then
+			printf "%s running, delaying screensaver\n" "$prog"
+			delay_screensaver
+			return 0
+		fi
+	done
+	return 1
+}
+
+delay_screensaver() {
+	# deactivate screensaver
+	if pgrep xscreensaver > /dev/null; then
+	  xscreensaver-command -deactivate
+  fi
+
+	# check if DPMS is on. if it is, deactivate and reactivate again,
+	if xset -q | grep 'DPMS is Enabled'; then
+		xset -dpms && xset dpms
+	fi
+} > /dev/null
+
+check_fullscreen() {
+	local window_id=$(xdotool getwindowfocus)
+
+	for display in ${displays[@]}; do
+		if is_fullscreen "$window_id" "$display"; then
+			needs_awake_screen "$window_id" && delay_screensaver
+		fi
+	done
+}
+
+is_fullscreen() {
+	# $1: window_id, $2: display
+	DISPLAY=:0.$2 xprop -id $1 | \
+		grep _NET_WM_STATE_FULLSCREEN > /dev/null
+}
+
+needs_awake_screen() {
+	# $1: window_id
+	local window_class=$(xprop -id $1 | grep "WM_CLASS(STRING)")
+
+	case "$window_class" in
+		*unknown*|*plugin_container*)
+			# firefox flash
+			pgrep plugin-containe && return 0 ;;
+		*chromium*)
+			# chromium flash
+			pgrep -f ".*((c|C)hrome|chromium).*PepperFlash.*" && return 0 ;;
+		*mplayer*|*MPlayer*)
+			# mplayer
+			pgrep mplayer && return 0 ;;
+		*vlc*)
+			# vlc player
+			pgrep vlc && return 0 ;;
+		*pluginloader*|*Wine*)
+			# silverlight
+			pgrep pluginloader && return 0 ;;
+		*ristretto*)
+			# ristretto image viewer
+			pgrep ristretto && return 0 ;;
+		*evince*|*epdfview*|*zathura*)
+			# pdf viewer
+			pgrep "(evince|epdfview|zathura)" && return 0 ;;
+	esac	
+	return 1
+} > /dev/null
+
+## main
+
+# redirect stderr to stdout
+exec 2>&1
+
+# set custom delay
+[ -z "$1" ] || delay=$1
+
+# bail if invalid argument
+[[ $1 =~ ^[1-9][0-9]*$ ]] || { usage; exit 1; }
+
+detect_displays
+
+while true; do
+  check_delay_progs || check_fullscreen
+	sleep $delay
+done

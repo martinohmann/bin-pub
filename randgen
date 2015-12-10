@@ -1,0 +1,33 @@
+#!/usr/bin/python3
+#
+# generate random passwords
+#
+# author: Martin Ohmann <martin@mohmann.de>
+#
+import argparse
+import random
+import string
+
+def generate_password(numchars, punctuation=False):
+    chars = string.ascii_letters + string.digits
+    password = ''
+    if punctuation:
+        # make punctuation less likely than digits and letters
+        chars = chars * 3 + string.punctuation
+    for i in range(numchars):
+        password += random.choice(chars)
+    return password
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Generate passwords '+
+        'of arbitrary length')
+    parser.add_argument('-n', '--count', dest='count', metavar='num',
+        type=int, default=1, help='number of passwords to generate')
+    parser.add_argument('-l', '--length', dest='numchars', metavar='chars',
+        type=int, default=12, help='password length')
+    parser.add_argument('-p', '--punctuation', dest='punct', 
+        action='store_true', help='include punctuation')
+    args = parser.parse_args()
+
+    for _ in range(args.count):
+        print(generate_password(args.numchars, args.punct))

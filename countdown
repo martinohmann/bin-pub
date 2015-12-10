@@ -1,0 +1,28 @@
+#!/bin/sh
+
+usage() {
+  printf "usage: %s <date>\n" "$(basename "$0")"
+}
+
+human_time() {
+  local T=$1
+  local D=$((T/60/60/24))
+  local H=$((T/60/60%24))
+  local M=$((T/60%60))
+  local S=$((T%60))
+  [[ $D > 0 ]] && printf '%d days ' $D
+  [[ $H > 0 ]] && printf '%02d hours ' $H
+  [[ $M > 0 ]] && printf '%00d minutes ' $M
+  [[ $D > 0 || $H > 0 || $M > 0 ]] && printf 'and '
+  printf '%02d seconds\n' $S
+}
+
+[ $# -lt 1 ] && { usage; exit 1; }
+
+future_date="$(date +"%Y-%m-%d %H:%M:%S" -d "$1")"
+seconds=$(date +%s -d "$future_date")
+
+while sleep 1; do
+	seconds_left=$((seconds - $(date +%s)))
+  printf "\r%s until %s" "$(human_time $seconds_left)" "$future_date"
+done

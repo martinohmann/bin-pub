@@ -1,0 +1,62 @@
+#!/bin/bash
+#
+# simple wrapper for dd to display progress
+# using kill -USR1 signals and busy waiting
+#
+# author: Martin Ohmann <martin@mohmann.de>
+#
+
+# default polling interval in sec
+interval=5
+
+usage() {
+  printf "simple progress wrapper for dd\n\n"
+  printf "usage: %s [-h|--help|-s sec] [dd-args...]\n\n" "$(basename "$0")"
+  printf "  -h|--help  display this help\n"
+  printf "  -s sec     polling interval in seconds (default: %d)\n" $interval
+  printf "\n  for info about [dd-args...] type 'dd --help'\n"
+}
+
+clean_up() {
+  printf "\ninterrupt: killing process %d\n" $pid
+  kill $pid; exit 1
+}
+
+# parse args
+if [ $# -ge 1 ]; then
+  case "$1" in
+    -h|--help)
+      usage; exit 0 ;;
+    -s)
+      # make sure param is present and is an integer
+      if [[ $# -lt 2 || ! $2 =~ ^[1-9][0-9]*$ ]]; then
+        usage; exit 1
+      fi
+      interval=$2; shift; shift ;;
+  esac
+fi
+
+msg() {
+  echo "updating every $interval seconds"
+}
+
+# run
+dd $@ &
+pid=$!
+
+# add signal handler to clean up on interrupt
+trap clean_up SIGHUP SIGINT SIGTERM
+
+clear; msg
+
+# give dd time to start
+sleep 1
+
+# busy waiting
+while [ -e /proc/$pid ]; do 
+  clear; msg
+  # poll status
+  kill -USR1 $pid
+  sleep $interval 
+done
+

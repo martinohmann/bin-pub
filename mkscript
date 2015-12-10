@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# wrapper for 'touch; chmod +x; vim' pattern for new scripts
+for i; do
+	touch "$i"
+	chmod a+x "$i"
+done
+
+vim -p "$@"

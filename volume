@@ -1,0 +1,43 @@
+#!/bin/bash
+#
+# wrapper script for amixer volume
+#
+# author: Martin Ohmann <martin@mohmann.de>
+
+# master control name
+master="Master"
+
+# volume up/down step percentage
+volstep="5"
+
+usage() {
+  printf "usage: %s [up|down|toggle|mute|unmute|get|status] [-v]\n" "$(basename $0)"
+  printf "       -v verbose\n"
+}
+
+[ $# -lt 1 ] && { usage; exit 1; }
+
+if [ $# -ge 2 ] && [ $2 = '-v' ]; then
+  outfd=/dev/stdout
+else
+  outfd=/dev/null
+fi
+
+exec 2>&1
+
+case "$1" in
+  up) 
+		amixer set $master ${volstep}%+ > $outfd ;;
+  down) 
+		amixer set $master ${volstep}%- > $outfd ;;
+  toggle|mute|unmute) 
+		amixer set $master $1 > $outfd ;;
+  get) 
+		amixer get $master | tail -n1 |sed -r 's/.*\[(.*)%\].*/\1/' ;;
+  status)
+    amixer get $master ;;
+  *)
+    usage; exit 1 ;;
+esac
+
+exit 0

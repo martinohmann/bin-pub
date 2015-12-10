@@ -1,0 +1,37 @@
+#!/bin/bash
+#
+# daemon that creates a fifo and displays msgs
+# on screen using libxosd
+#
+# usage:
+#   osd-fifo &
+#   echo "this will appear on screen" > /tmp/osd-fifo
+#   sleep 2
+#   echo "and this too" > /tmp/osd-fifo
+#
+
+# fifo path
+fifo=/tmp/osd-fifo
+
+setup() {
+  if [ -e "$fifo" ] && [ -f "$fifo" ]; then
+    rm "$fifo"
+  fi
+  [ -p "$fifo" ] || mkfifo "$fifo"
+  trap 'cleanup' EXIT HUP INT QUIT PIPE TERM
+}
+
+cleanup() {
+  [ -p "$fifo" ] && rm "$fifo"
+}
+
+# setup fifo
+setup
+
+# read msges from fifo and display them
+tail -n 1 -f "$fifo" | osd_cat -p middle -A center \
+  -f '-misc-ohsnap-medium-r-*-*-100-*-*-*-c-*-*-*' \
+  -d 5 -c '#3377dd' -O 2 -s 4 -S '#1a1a1a' -l 1
+
+# cleanup if pipe somehow broke
+cleanup
