@@ -9,31 +9,31 @@ cmd=$(which xscreensaver)
 verbose=1
 
 usage() {
-	printf "usage: %s [on|off|toggle] [-q]\n" "$(basename $0)" 
-	printf "       -q quiet\n"
+  printf "usage: %s [on|off|toggle] [-q]\n" "$(basename $0)" 
+  printf "       -q quiet\n"
 }
 
 msg() {
-	[ $verbose -eq 1 ] && echo "$@"
+  [ $verbose -eq 1 ] && echo "$@"
 }
 
 turn_on() {
-	if [ $ret -gt 0 ]; then
-		$cmd -no-splash &
-		pid=$(pgrep xscreensaver 2> /dev/null)
-		msg "xscreensaver on (pid: ${pid})"
-	else
-		msg "xscreensaver already running (pid: ${pid})"
-	fi
+  if [ $ret -gt 0 ]; then
+    $cmd -no-splash &
+    pid=$(pgrep xscreensaver 2> /dev/null)
+    msg "xscreensaver on (pid: ${pid})"
+  else
+    msg "xscreensaver already running (pid: ${pid})"
+  fi
 }
 
 turn_off() {
-	if [ $ret -eq 0 ]; then
-		kill $pid
-		msg "xscreensaver off"
-	else
-		msg "xscreensaver not running"
-	fi
+  if [ $ret -eq 0 ]; then
+    kill $pid
+    msg "xscreensaver off"
+  else
+    msg "xscreensaver not running"
+  fi
 }
 
 [ $# -lt 1 ] && { usage; exit 1; }
@@ -43,11 +43,11 @@ pid=$(pgrep xscreensaver 2> /dev/null)
 ret=$?
 
 case "$1" in
-	on) turn_on ;;
-	off) turn_off ;;
-	toggle)
-		[ $ret -eq 0 ] && { turn_off; exit 0; }
-		turn_on ;;
-	*) usage; exit 1 ;;
-esac	
+  on) turn_on ;;
+  off) turn_off ;;
+  toggle)
+    [ $ret -eq 0 ] && { turn_off; exit 0; }
+    turn_on ;;
+  *) usage; exit 1 ;;
+esac  
 

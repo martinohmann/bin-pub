@@ -27,13 +27,13 @@ exec 2>&1
 
 case "$1" in
   up) 
-		amixer set $master ${volstep}%+ > $outfd ;;
+    amixer set $master ${volstep}%+ > $outfd ;;
   down) 
-		amixer set $master ${volstep}%- > $outfd ;;
+    amixer set $master ${volstep}%- > $outfd ;;
   toggle|mute|unmute) 
-		amixer set $master $1 > $outfd ;;
+    amixer set $master $1 > $outfd ;;
   get) 
-		amixer get $master | tail -n1 |sed -r 's/.*\[(.*)%\].*/\1/' ;;
+    amixer get $master | tail -n1 |sed -r 's/.*\[(.*)%\].*/\1/' ;;
   status)
     amixer get $master ;;
   *)

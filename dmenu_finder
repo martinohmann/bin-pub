@@ -21,113 +21,113 @@ limit=100
 fm="thunar"
 
 read_history() {
-	if [ $hist_size -gt 0  ] && [ -f "$hist_file" ]; then
-		cat "$hist_file"
-	fi
+  if [ $hist_size -gt 0  ] && [ -f "$hist_file" ]; then
+    cat "$hist_file"
+  fi
 }
 
 update_history() { # $1: element to add
-	local hist
+  local hist
 
-	if [ $hist_size -gt 0 ]; then
-		touch "$hist_file"
+  if [ $hist_size -gt 0 ]; then
+    touch "$hist_file"
 
-		# escape slashes and delete element from history
-		sed -i "/^${1//\//\\/}$/d" "$hist_file"
+    # escape slashes and delete element from history
+    sed -i "/^${1//\//\\/}$/d" "$hist_file"
 
-		# prepend element to history
-		hist=$(echo "$1"; head -n$((hist_size-1)) "$hist_file")
-		echo "$hist" > "$hist_file"
-	fi
+    # prepend element to history
+    hist=$(echo "$1"; head -n$((hist_size-1)) "$hist_file")
+    echo "$hist" > "$hist_file"
+  fi
 }
 
 locate_files() {
-	locate --quiet --basename --limit $limit \
+  locate --quiet --basename --limit $limit \
     --ignore-case --existing --regexp "$@"
 }
 
 open_dmenu() {
-	local prompt=$1; shift
-	dmenu_wrapper -b -p "$prompt" $@
+  local prompt=$1; shift
+  dmenu_wrapper -b -p "$prompt" $@
 }
 
 open_selection() { # $1: file or directory
-	local action
-	local file_type
+  local action
+  local file_type
 
-	if [ $# -ge 1 ] && [ "$1" != '' ]; then
-		if [ -d $1 ]; then
-			# directory
-			action="$(echo -e "1: open\n2: open with $fm" | \
-				open_dmenu "\"$1\" is a directory, choose action:")"
-			
-			case "$action" in
-				*open) 		urxvtc -cd "$1";;
-				*$fm) 	  $fm "$1";;
-				*) 				exit 0;;
-			esac
-		elif file -L "$1" | grep -q "executable"; then
-			# executable
-			file_type="binary"
+  if [ $# -ge 1 ] && [ "$1" != '' ]; then
+    if [ -d $1 ]; then
+      # directory
+      action="$(echo -e "1: open\n2: open with $fm" | \
+        open_dmenu "\"$1\" is a directory, choose action:")"
+      
+      case "$action" in
+        *open)    urxvtc -cd "$1";;
+        *$fm)     $fm "$1";;
+        *)        exit 0;;
+      esac
+    elif file -L "$1" | grep -q "executable"; then
+      # executable
+      file_type="binary"
 
-			file -L "$1" | grep -q "ASCII text executable" && file_type="ascii"
+      file -L "$1" | grep -q "ASCII text executable" && file_type="ascii"
 
-			action="$(echo -e \
-				"1: execute\n2: edit\n3: open dir\n4: open dir with $fm" | \
-				open_dmenu "File \"$1\" is an executable ($file_type), choose action:")"
-			
-			case "$action" in
-				*edit) 		urxvtc -e ${EDITOR:-vim} "$1";;
-				*execute) urxvtc -e sh -c "$1; read";;
-				*dir) 		urxvtc -cd "$(dirname "$1")";;
-				*$fm) 	  $fm "$(dirname "$1")";;
-				*) 				exit 0;;
-			esac
-		else
-			if file -L "$1" | egrep -q "(ASCII|UTF-8 Unicode|ISO-8859) text"; then
-				# edit text files with vim
-				urxvtc -e ${EDITOR:-vim} "$1"
-			else
-				# all other files
-				xdg-open "$1"
-			fi
-		fi
-	fi
+      action="$(echo -e \
+        "1: execute\n2: edit\n3: open dir\n4: open dir with $fm" | \
+        open_dmenu "File \"$1\" is an executable ($file_type), choose action:")"
+      
+      case "$action" in
+        *edit)    urxvtc -e ${EDITOR:-vim} "$1";;
+        *execute) urxvtc -e sh -c "$1; read";;
+        *dir)     urxvtc -cd "$(dirname "$1")";;
+        *$fm)     $fm "$(dirname "$1")";;
+        *)        exit 0;;
+      esac
+    else
+      if file -L "$1" | egrep -q "(ASCII|UTF-8 Unicode|ISO-8859) text"; then
+        # edit text files with vim
+        urxvtc -e ${EDITOR:-vim} "$1"
+      else
+        # all other files
+        xdg-open "$1"
+      fi
+    fi
+  fi
 }
 
 main() {
-	local prompt 
-	local input 
-	local results 
-	local count 
-	local dmenu_args
-	local selection
+  local prompt 
+  local input 
+  local results 
+  local count 
+  local dmenu_args
+  local selection
 
-	prompt="Search:"
-		
-	while [ "$results" = "" ]; do
-		input="$(read_history | open_dmenu "$prompt")"
+  prompt="Search:"
+    
+  while [ "$results" = "" ]; do
+    input="$(read_history | open_dmenu "$prompt")"
 
-		[ "$input" = "" ] && exit 0
+    [ "$input" = "" ] && exit 0
 
-		update_history "$input"
+    update_history "$input"
 
-		results="$(locate_files "$input")"
-		prompt="No results for \"$input\". Search:"
-	done
+    results="$(locate_files "$input")"
+    prompt="No results for \"$input\". Search:"
+  done
 
-	count=$(echo "$results" | wc -l)
+  count=$(echo "$results" | wc -l)
 
-	prompt="${count}$([ $count -ge $limit ] && echo "+")"
-	prompt+=" result$([ ! $count -eq 1 ] && echo "s")"
-	prompt+=" for \"$input\":"
-	
-	[ $count -gt $max_lines ] && count=$max_lines
-	[ ! $count -eq 1 ] && dmenu_args="-l $count"
+  prompt="${count}$([ $count -ge $limit ] && echo "+")"
+  prompt+=" result$([ ! $count -eq 1 ] && echo "s")"
+  prompt+=" for \"$input\":"
+  
+  [ $count -gt $max_lines ] && count=$max_lines
+  [ ! $count -eq 1 ] && dmenu_args="-l $count"
 
-	selection="$(echo "$results" | open_dmenu "$prompt" $dmenu_args)"
-	
-	open_selection "$selection"
+  selection="$(echo "$results" | open_dmenu "$prompt" $dmenu_args)"
+  
+  open_selection "$selection"
 }
 
 main

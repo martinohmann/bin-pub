@@ -18,10 +18,10 @@ action="$(echo -e "1: suspend\n2: poweroff\n3: reboot\n4: restart $wm\n5: logout
   dmenu_wrapper -b -p "Session:")"
 
 case "$action" in
-  *suspend)  	cmd="/usr/sbin/systemctl suspend -i";;
-  *poweroff) 	cmd="/usr/sbin/systemctl poweroff -i";;
-  *reboot) 		cmd="/usr/sbin/systemctl reboot -i";;
-  *restart) 	
+  *suspend)   cmd="/usr/sbin/systemctl suspend -i";;
+  *poweroff)  cmd="/usr/sbin/systemctl poweroff -i";;
+  *reboot)    cmd="/usr/sbin/systemctl reboot -i";;
+  *restart)   
     if [ "$wm" = dwm ]; then
       cmd="killall dwm"
     else
@@ -33,7 +33,7 @@ case "$action" in
     else
       cmd="i3-msg exit"
     fi;;
-  *screen) 		
+  *screen)    
     if [ "$wm" = dwm ]; then
       cmd="/usr/bin/xscreensaver-command -lock"
     else

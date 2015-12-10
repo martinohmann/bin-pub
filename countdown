@@ -23,6 +23,6 @@ future_date="$(date +"%Y-%m-%d %H:%M:%S" -d "$1")"
 seconds=$(date +%s -d "$future_date")
 
 while sleep 1; do
-	seconds_left=$((seconds - $(date +%s)))
+  seconds_left=$((seconds - $(date +%s)))
   printf "\r%s until %s" "$(human_time $seconds_left)" "$future_date"
 done

@@ -8,18 +8,18 @@
 #
 
 main() {
-	[[ "$@" != *-fn ]] && font="-*-ohsnap-medium-r-*-*-14-*-*-*-*-*-*-*"
-	[[ "$@" != *-nb ]] && args="${args} -nb #000000"
-	[[ "$@" != *-nf ]] && args="${args} -nf #a3a4a8"
-	[[ "$@" != *-sb ]] && args="${args} -sb #285577"
-	[[ "$@" != *-sf ]] && args="${args} -sf #ffffff"
-	# [[ "$@" != *-b ]] && args="${args} -b"
+  [[ "$@" != *-fn ]] && font="-*-ohsnap-medium-r-*-*-14-*-*-*-*-*-*-*"
+  [[ "$@" != *-nb ]] && args="${args} -nb #000000"
+  [[ "$@" != *-nf ]] && args="${args} -nf #a3a4a8"
+  [[ "$@" != *-sb ]] && args="${args} -sb #285577"
+  [[ "$@" != *-sf ]] && args="${args} -sf #ffffff"
+  # [[ "$@" != *-b ]] && args="${args} -b"
 
-	if [[ -n "$font" ]]; then
-		/usr/bin/dmenu -fn "$font" $args "$@"
-	else 
-		/usr/bin/dmenu $args "$@"
-	fi
+  if [[ -n "$font" ]]; then
+    /usr/bin/dmenu -fn "$font" $args "$@"
+  else 
+    /usr/bin/dmenu $args "$@"
+  fi
 }
 
 main "$@"
