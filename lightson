@@ -2,6 +2,9 @@
 #
 # delay screensaver when needed
 # 
+# handles DPMS and xscreensaver you can add your screensaver to the
+# delay_screensaver function if it supports deactivation
+# 
 # author: Martin Ohmann <martin@mohmann.de>
 #
 
