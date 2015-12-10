@@ -2,8 +2,11 @@
 #
 # delay screensaver when needed
 # 
-# handles DPMS and xscreensaver you can add your screensaver to the
-# delay_screensaver function if it supports deactivation
+# handles DPMS and xscreensaver sleep
+#
+# If you're using another screensaver like e.g. gnome-screensaver.
+# you can add your screensaver to the 'delay_screensaver' function 
+# if your screensaver supports deactivation.
 # 
 # author: Martin Ohmann <martin@mohmann.de>
 #
