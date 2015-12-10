@@ -30,7 +30,12 @@ setup_osd_fifo() {
 }
 
 load_state() {
+  # load state
   [ -f "$state_file" ] && . "$state_file"
+  # state vars:
+  # job_id=
+  # state=
+  # res=
 }
 
 save_state() {
