@@ -26,16 +26,16 @@ fi
 exec 2>&1
 
 case "$1" in
-  up) 
-    amixer set $master ${volstep}%+ > $outfd ;;
-  down) 
-    amixer set $master ${volstep}%- > $outfd ;;
-  toggle|mute|unmute) 
-    amixer set $master $1 > $outfd ;;
-  get) 
-    amixer get $master | tail -n1 |sed -r 's/.*\[(.*)%\].*/\1/' ;;
+  up)
+    amixer -D pulse sset $master ${volstep}%+ > $outfd ;;
+  down)
+    amixer -D pulse sset $master ${volstep}%- > $outfd ;;
+  toggle|mute|unmute)
+    amixer -D pulse sset $master $1 > $outfd ;;
+  get)
+    amixer -D pulse sget $master | tail -n1 |sed -r 's/.*\[(.*)%\].*/\1/' ;;
   status)
-    amixer get $master ;;
+    amixer -D pulse sget $master ;;
   *)
     usage; exit 1 ;;
 esac

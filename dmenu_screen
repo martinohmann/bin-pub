@@ -1,0 +1,27 @@
+#!/bin/bash
+#
+# screen switcher script using dmenu
+#
+# author: Martin Ohmann <martin@mohmann.de>
+#
+
+if pgrep -c dwm; then
+  wm=dwm
+elif pgrep -c i3; then
+  wm=i3
+else
+  >&2 echo "unsupported wm"
+  exit 1
+fi
+
+action="$(echo -e "1: work\n2: home\n3: laptop" | \
+  dmenu_wrapper -b -p "Screens:")"
+
+case "$action" in
+  *work) cmd="~/.config/i3/screen -d DP1:HDMI2:eDP1 -e right";;
+  *home) cmd="~/.config/i3/screen -d DP2-2:eDP1 -e right";;
+  *laptop) cmd="~/.config/i3/screen -d eDP1";;
+  *) exit 1;;
+esac
+
+eval exec "$cmd"

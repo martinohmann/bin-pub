@@ -8,8 +8,8 @@
 #
 
 main() {
-  #[[ "$@" != *-fn ]] && font="-*-ohsnap-medium-r-*-*-14-*-*-*-*-*-*-*" # dmenu 4.5.3
-  [[ "$@" != *-fn ]] && font="Ohsnap-12" # dmenu 4.6
+  # [[ "$@" != *-fn ]] && font="-*-ohsnap-medium-r-*-*-14-*-*-*-*-*-*-*" # dmenu 4.5.3
+  [[ "$@" != *-fn ]] && font="Misc Ohsnap-12" # dmenu 4.6
   [[ "$@" != *-nb ]] && args="${args} -nb #000000"
   [[ "$@" != *-nf ]] && args="${args} -nf #a3a4a8"
   [[ "$@" != *-sb ]] && args="${args} -sb #285577"

@@ -15,13 +15,14 @@ fg_yellow=$(tput setaf 3)
 fg_white=$(tput setaf 7)
 
 # window manager names
-wmnames="dwm fluxbox openbox blackbox xfwm4 metacity kwin icewm pekwm fvwm \
-  awesome wmaker stumpwm musca i3 xmonad ratpoison scrotwm spectrwm wmfs wmii \
-  beryl subtle e16 enlightenment sawfish emerald monsterwm dminiwm compiz \
-  herbstluftwm"
-compositors="xcompmgr compton"
+declare -a wmnames=( dwm fluxbox openbox blackbox xfwm4 metacity kwin icewm
+  pekwm fvwm awesome wmaker stumpwm musca i3 xmonad ratpoison scrotwm spectrwm
+  wmfs wmii beryl subtle e16 enlightenment sawfish emerald monsterwm dminiwm
+  compiz herbstluftwm )
+declare -a compositors=( xcompmgr compton )
 
 term="$TERM"
+user_id="$(id -u "$USER")"
 
 format_time_span() {
   local t=$1
@@ -33,15 +34,15 @@ format_time_span() {
   # if y > 1, show years, days
   # else show days, hours minutes seconds
   [[ $y == 1 ]] && printf '%d year' $y
-  [[ $y > 1 ]] && printf '%d years' $y
-  [[ $y > 0 && $d > 0 ]] && printf ' '
+  [[ $y -gt 1 ]] && printf '%d years' $y
+  [[ $y -gt 0 && $d -gt 0 ]] && printf ' '
   [[ $d == 1 ]] && printf '%d day' $d
-  [[ $d > 1 ]] && printf '%d days' $d
-  [[ $y == 0 && $d > 0 ]] && printf ' '
-  [[ $y == 0 && $h > 0 ]] && printf '%dh ' $h
-  [[ $y == 0 && $m > 0 ]] && printf '%dm ' $m
+  [[ $d -gt 1 ]] && printf '%d days' $d
+  [[ $y == 0 && $d -gt 0 ]] && printf ' '
+  [[ $y == 0 && $h -gt 0 ]] && printf '%dh ' $h
+  [[ $y == 0 && $m -gt 0 ]] && printf '%dm ' $m
   [[ $y == 0 ]] && printf '%ds\n' $s
-  [[ $y > 0 ]] && printf '\n'
+  [[ $y -gt 0 ]] && printf '\n'
 }
 
 print_packages() {
@@ -55,9 +56,10 @@ print_updates() {
 
   if which pacman > /dev/null 2>&1; then
     count=$(pacman -Qqu --dbpath /tmp/.localsync 2> /dev/null | wc -l)
-    #count=$(pacman -Qqu | wc -l)
+    # count=$(pacman -Qqu | wc -l)
   fi
 
+  # shellcheck disable=SC2086
   [ $count -gt 0 ] && echo -ne "$count"
 }
 
@@ -67,25 +69,24 @@ print_install_date() {
   if [ -f /var/log/pacman.log ]; then
     install_date=$(awk 'NR==1 { print substr($1, 2) }' /var/log/pacman.log)
     install_seconds=$(($(date +%s) - $(date --date="${install_date}" +%s)))
-    printf "%s (%s ago)" "$install_date" "$(format_time_span $install_seconds)" 
+    printf "%s (%s ago)" "$install_date" "$(format_time_span $install_seconds)"
   fi
 }
 
 print_window_manager() {
   local wm
-  local user_id="$(id -u ${USER})"
-  
-  for w in $wmnames; do
+
+  for w in "${wmnames[@]}"; do
     if pgrep -U "$user_id" "$w" > /dev/null 2>&1; then
       wm="$w"
       break
     fi
   done
 
-  if [ ! -z $wm ]; then
-    for c in $compositors; do
+  if [ ! -z "$wm" ]; then
+    for c in "${compositors[@]}"; do
       if pgrep -U "$user_id" "$c" > /dev/null 2>&1; then
-        wm="${wm} with ${c}"
+        wm="$wm with $c"
         break
       fi
     done
@@ -93,11 +94,13 @@ print_window_manager() {
   echo -ne "${wm:-}"
 }
 
+# shellcheck disable=SC2155
 print_uptime() {
   local uptime=$(cut -d" " -f1 /proc/uptime)
-  echo -ne "$(format_time_span ${uptime%.*})"
+  echo -ne "$(format_time_span "${uptime%.*}")"
 }
 
+# shellcheck disable=SC2155
 print_mem_usage() {
   local prefix
   local out=$(free -m)
@@ -116,6 +119,7 @@ print_mem_usage() {
   echo -ne "${prefix}${used}MB${reset} of ${total}MB"
 }
 
+# shellcheck disable=SC2155
 print_disk_usage() { # $1: mountpoint or partition e.g. "/home, /dev/sda1"
   local prefix used total used_perc
   local out=$(df -h "$1")
@@ -126,6 +130,7 @@ print_disk_usage() { # $1: mountpoint or partition e.g. "/home, /dev/sda1"
     total=$(echo "$out" | awk 'NR==2 { print $2 }')
     used_perc=$(echo "$out" | awk 'NR==2 { print substr($5, 0, length($5)-1) }')
 
+    # shellcheck disable=SC2086
     if [ $used_perc -ge 75 ]; then
       prefix="${fg_red}"
     elif [ $used_perc -gt 66 ]; then
@@ -139,7 +144,7 @@ print_disk_usage() { # $1: mountpoint or partition e.g. "/home, /dev/sda1"
 }
 
 print_info_line() { # $1: key, $2: value
-  local line='____________________'
+  local line='______________________'
 
   if [ $# -lt 1 ]; then
     printf "%b  │%b\n" "$fg_black" "$reset"
@@ -194,7 +199,7 @@ print_sysinfo() {
   print_info_line
   print_info_line "cpu" "$cpu"
   print_info_line "mem" "$mem"
-  printf "$disks"
+  echo -ne "$disks"
 
   printf "%b  └─%b\n\n" "$fg_black" "$reset"
 }

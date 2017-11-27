@@ -23,7 +23,7 @@ usage() {
   printf "  <delay>   delay between checks in seconds (>0). should\n" 
   printf "            be ~10 seconds less than the time it takes the\n"
   printf "            screensaver or DPMS to activate. default: %d\n" \
-    "$default_delay"
+    "$delay"
 }
 
 detect_displays() {

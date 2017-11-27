@@ -1,0 +1,54 @@
+#!/bin/bash
+#
+# author: Martin Ohmann <martin@mohmann.de>
+#
+# enable or disable touchpad
+#
+# starts syndaemon when touchpad is enabled to automatically
+# disable it while typing
+#
+
+usage() {
+  echo "usage: $(basename "$0") [on|off|toggle|status]"
+}
+
+enabled() {
+  synclient -l | grep -q "TouchpadOff.*0"
+}
+
+enable_touchpad() {
+  daemon_running || syndaemon -i 1 -k -d
+  synclient TouchpadOff=0
+}
+
+disable_touchpad() {
+  daemon_running && killall syndaemon > /dev/null 2>&1
+  synclient TouchpadOff=1
+}
+
+daemon_running() {
+  pgrep syndaemon > /dev/null 2>&1
+}
+
+print_status() {
+  enabled && echo "touchpad on" || echo "touchpad off"
+}
+
+case "$1" in
+  status)
+    print_status ;;
+  on)
+    enable_touchpad
+    print_status ;;
+  off)
+    disable_touchpad
+    print_status ;;
+  toggle)
+    enabled \
+      && disable_touchpad \
+      || enable_touchpad
+    print_status ;;
+  *)
+    usage
+    exit 1 ;;
+esac
